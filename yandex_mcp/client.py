@@ -12,6 +12,7 @@ from yandex_mcp.config import (
     YANDEX_DIRECT_API_URL_V501,
     YANDEX_DIRECT_SANDBOX_URL,
     YANDEX_METRIKA_API_URL,
+    YANDEX_WORDSTAT_API_URL,
 )
 
 
@@ -22,6 +23,7 @@ class YandexAPIClient:
         self.direct_token = os.environ.get("YANDEX_DIRECT_TOKEN", "")
         self.metrika_token = os.environ.get("YANDEX_METRIKA_TOKEN", "")
         self.unified_token = os.environ.get("YANDEX_TOKEN", "")
+        self.wordstat_token = os.environ.get("YANDEX_WORDSTAT_TOKEN", "")
         self.client_login = os.environ.get("YANDEX_CLIENT_LOGIN", "")
         self.use_sandbox = os.environ.get("YANDEX_USE_SANDBOX", "false").lower() == "true"
 
@@ -30,6 +32,9 @@ class YandexAPIClient:
 
     def _get_metrika_token(self) -> str:
         return self.metrika_token or self.unified_token
+
+    def _get_wordstat_token(self) -> str:
+        return self.wordstat_token or self.direct_token or self.unified_token
 
     def _get_direct_url(self, use_v501: bool = False) -> str:
         if self.use_sandbox:
@@ -144,6 +149,31 @@ class YandexAPIClient:
             if response.status_code == 204:
                 return {"success": True}
 
+            return response.json()
+
+
+    async def wordstat_request(
+        self,
+        endpoint: str,
+        data: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Make a request to Yandex Wordstat API."""
+        token = self._get_wordstat_token()
+        if not token:
+            raise ValueError(
+                "Yandex Wordstat API token not configured. "
+                "Set YANDEX_WORDSTAT_TOKEN, YANDEX_DIRECT_TOKEN, or YANDEX_TOKEN."
+            )
+
+        url = f"{YANDEX_WORDSTAT_API_URL}{endpoint}"
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json;charset=utf-8",
+        }
+
+        async with httpx.AsyncClient(timeout=DEFAULT_TIMEOUT) as client:
+            response = await client.post(url, json=data or {}, headers=headers)
+            response.raise_for_status()
             return response.json()
 
 

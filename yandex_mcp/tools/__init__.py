@@ -12,4 +12,5 @@ from yandex_mcp.tools import (  # noqa: F401
     metrika_counters,
     metrika_goals,
     metrika_reports,
+    wordstat,
 )

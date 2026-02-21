@@ -30,6 +30,13 @@ from yandex_mcp.models.metrika import (
     MetrikaByTimeInput,
     MetrikaReportInput,
 )
+from yandex_mcp.models.wordstat import (
+    WordstatDynamicsInput,
+    WordstatRegionsInput,
+    WordstatRegionsTreeInput,
+    WordstatTopRequestsInput,
+    WordstatUserInfoInput,
+)
 
 __all__ = [
     "StrictModel",
@@ -58,4 +65,9 @@ __all__ = [
     "GoalCondition",
     "MetrikaByTimeInput",
     "MetrikaReportInput",
+    "WordstatDynamicsInput",
+    "WordstatRegionsInput",
+    "WordstatRegionsTreeInput",
+    "WordstatTopRequestsInput",
+    "WordstatUserInfoInput",
 ]

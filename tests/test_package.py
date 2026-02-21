@@ -9,8 +9,8 @@ def test_mcp_import():
     assert mcp.name == "yandex_mcp"
 
 
-def test_all_32_tools_registered():
-    """All 32 existing tools are registered with correct names."""
+def test_all_37_tools_registered():
+    """All 37 tools are registered with correct names."""
     from yandex_mcp import mcp
 
     tools = mcp._tool_manager._tools
@@ -48,9 +48,14 @@ def test_all_32_tools_registered():
         "metrika_create_goal",
         "metrika_get_report",
         "metrika_get_report_by_time",
+        "wordstat_top_requests",
+        "wordstat_dynamics",
+        "wordstat_regions",
+        "wordstat_regions_tree",
+        "wordstat_user_info",
     ]
 
-    assert len(tools) == 32
+    assert len(tools) == 37
     for name in expected_tools:
         assert name in tools, f"Missing tool: {name}"
 
