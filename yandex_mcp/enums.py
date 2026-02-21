@@ -68,6 +68,42 @@ class DailyBudgetMode(str, Enum):
     DISTRIBUTED = "DISTRIBUTED"
 
 
+class SearchStrategyType(str, Enum):
+    """Search bidding strategy type for campaign creation."""
+
+    HIGHEST_POSITION = "HIGHEST_POSITION"
+    WB_MAXIMUM_CLICKS = "WB_MAXIMUM_CLICKS"
+    AVERAGE_CPC = "AVERAGE_CPC"
+    AVERAGE_CPA = "AVERAGE_CPA"
+    PAY_FOR_CONVERSION = "PAY_FOR_CONVERSION"
+    SERVING_OFF = "SERVING_OFF"
+
+
+class NetworkStrategyType(str, Enum):
+    """Network bidding strategy type for campaign creation."""
+
+    NETWORK_DEFAULT = "NETWORK_DEFAULT"
+    MAXIMUM_COVERAGE = "MAXIMUM_COVERAGE"
+    WB_MAXIMUM_CLICKS = "WB_MAXIMUM_CLICKS"
+    AVERAGE_CPC = "AVERAGE_CPC"
+    SERVING_OFF = "SERVING_OFF"
+
+
+class AdImageType(str, Enum):
+    """Ad image type for upload."""
+
+    REGULAR = "REGULAR"
+    WIDE = "WIDE"
+    FIXED_IMAGE = "FIXED_IMAGE"
+
+
+class AdImageAssociation(str, Enum):
+    """Image association filter."""
+
+    YES = "YES"
+    NO = "NO"
+
+
 class MetrikaGroupType(str, Enum):
     """Time grouping for Metrika reports."""
 

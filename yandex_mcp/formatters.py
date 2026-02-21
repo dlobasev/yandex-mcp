@@ -103,6 +103,28 @@ def format_keywords_markdown(keywords: list[dict[str, Any]]) -> str:
     return "\n".join(lines)
 
 
+def format_images_markdown(images: list[dict[str, Any]]) -> str:
+    """Format ad images list as markdown."""
+    if not images:
+        return "No images found."
+
+    lines = ["# Ad Images\n"]
+    for img in images:
+        lines.append(f"## {img.get('Name', 'Unnamed')}")
+        lines.append(f"- **Hash**: {img.get('AdImageHash', 'N/A')}")
+        lines.append(f"- **Type**: {img.get('Type', 'N/A')}")
+        if img.get("Subtype") and img["Subtype"] != "NONE":
+            lines.append(f"- **Subtype**: {img['Subtype']}")
+        lines.append(f"- **Associated**: {img.get('Associated', 'N/A')}")
+        if img.get("OriginalUrl"):
+            lines.append(f"- **Original URL**: {img['OriginalUrl']}")
+        if img.get("PreviewUrl"):
+            lines.append(f"- **Preview URL**: {img['PreviewUrl']}")
+        lines.append("")
+
+    return "\n".join(lines)
+
+
 def format_metrika_counters_markdown(counters: list[dict[str, Any]]) -> str:
     """Format Metrika counters as markdown."""
     if not counters:

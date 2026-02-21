@@ -1,16 +1,20 @@
 """Pydantic input models for Yandex Direct API tools."""
 
 
-from pydantic import Field
+from pydantic import Field, model_validator
 
 from yandex_mcp.enums import (
+    AdImageAssociation,
+    AdImageType,
     AdState,
     AdStatus,
     CampaignState,
     CampaignStatus,
     CampaignType,
     DailyBudgetMode,
+    NetworkStrategyType,
     ResponseFormat,
+    SearchStrategyType,
 )
 from yandex_mcp.models.common import StrictModel
 
@@ -97,6 +101,178 @@ class UpdateCampaignInput(StrictModel):
         default=None,
         description="Campaign-level negative keywords",
     )
+
+
+class CreateCampaignInput(StrictModel):
+    """Input for creating a new Unified Performance Campaign (ЕПК).
+
+    Strategy parameters are flat for LLM-friendliness.
+    Required sub-params depend on the chosen strategy and are validated automatically.
+    """
+
+    name: str = Field(
+        ...,
+        min_length=1,
+        max_length=255,
+        description="Campaign name",
+    )
+    start_date: str = Field(
+        ...,
+        pattern=r"^\d{4}-\d{2}-\d{2}$",
+        description="Campaign start date (YYYY-MM-DD)",
+    )
+
+    # --- Strategy fields ---
+    search_strategy: SearchStrategyType = Field(
+        default=SearchStrategyType.HIGHEST_POSITION,
+        description=(
+            "Search bidding strategy: "
+            "HIGHEST_POSITION (manual bids, default), "
+            "WB_MAXIMUM_CLICKS (auto, requires weekly_spend_limit), "
+            "AVERAGE_CPC (auto, requires average_cpc), "
+            "AVERAGE_CPA (auto, requires average_cpa + goal_id), "
+            "PAY_FOR_CONVERSION (auto, requires pay_for_conversion_cpa + goal_id), "
+            "SERVING_OFF (disable search)"
+        ),
+    )
+    network_strategy: NetworkStrategyType = Field(
+        default=NetworkStrategyType.SERVING_OFF,
+        description=(
+            "Network bidding strategy: "
+            "NETWORK_DEFAULT (use search bids), "
+            "MAXIMUM_COVERAGE (max impressions), "
+            "WB_MAXIMUM_CLICKS (auto, requires weekly_spend_limit), "
+            "AVERAGE_CPC (auto, requires network_average_cpc), "
+            "SERVING_OFF (disable network, default)"
+        ),
+    )
+
+    # --- Strategy sub-parameters ---
+    weekly_spend_limit: float | None = Field(
+        default=None,
+        gt=0,
+        description=(
+            "Weekly spend limit in currency units. "
+            "Required for WB_MAXIMUM_CLICKS strategy."
+        ),
+    )
+    bid_ceiling: float | None = Field(
+        default=None,
+        gt=0,
+        description="Max CPC bid ceiling in currency units (optional for WB_MAXIMUM_CLICKS).",
+    )
+    average_cpc: float | None = Field(
+        default=None,
+        gt=0,
+        description="Target average CPC in currency units. Required for AVERAGE_CPC search strategy.",
+    )
+    average_cpa: float | None = Field(
+        default=None,
+        gt=0,
+        description="Target average CPA in currency units. Required for AVERAGE_CPA search strategy.",
+    )
+    goal_id: int | None = Field(
+        default=None,
+        description=(
+            "Yandex Metrica goal ID. "
+            "Required for AVERAGE_CPA and PAY_FOR_CONVERSION strategies."
+        ),
+    )
+    pay_for_conversion_cpa: float | None = Field(
+        default=None,
+        gt=0,
+        description=(
+            "Amount to pay per conversion in currency units. "
+            "Required for PAY_FOR_CONVERSION strategy."
+        ),
+    )
+    network_average_cpc: float | None = Field(
+        default=None,
+        gt=0,
+        description="Target average CPC for network. Required for AVERAGE_CPC network strategy.",
+    )
+
+    # --- Optional campaign fields ---
+    end_date: str | None = Field(
+        default=None,
+        pattern=r"^\d{4}-\d{2}-\d{2}$",
+        description="Campaign end date (YYYY-MM-DD)",
+    )
+    daily_budget_amount: float | None = Field(
+        default=None,
+        gt=0,
+        description="Daily budget in currency units",
+    )
+    daily_budget_mode: DailyBudgetMode = Field(
+        default=DailyBudgetMode.DISTRIBUTED,
+        description="Daily budget mode: STANDARD or DISTRIBUTED",
+    )
+    negative_keywords: list[str] | None = Field(
+        default=None,
+        description="Campaign-level negative keywords",
+    )
+    time_zone: str | None = Field(
+        default=None,
+        description="Time zone (e.g., 'Europe/Moscow'). Defaults to account time zone.",
+    )
+    counter_ids: list[int] | None = Field(
+        default=None,
+        description="Yandex Metrica counter IDs to link to this campaign",
+    )
+    excluded_sites: list[str] | None = Field(
+        default=None,
+        description="List of sites to exclude from ad network placements",
+    )
+    blocked_ips: list[str] | None = Field(
+        default=None,
+        max_length=25,
+        description="List of IP addresses to block from seeing ads (max 25)",
+    )
+
+    @model_validator(mode="after")
+    def validate_strategy_params(self) -> "CreateCampaignInput":
+        """Validate that required sub-parameters are provided for each strategy."""
+        if self.search_strategy == SearchStrategyType.WB_MAXIMUM_CLICKS:
+            if self.weekly_spend_limit is None:
+                raise ValueError(
+                    "weekly_spend_limit is required for WB_MAXIMUM_CLICKS search strategy"
+                )
+        elif self.search_strategy == SearchStrategyType.AVERAGE_CPC:
+            if self.average_cpc is None:
+                raise ValueError(
+                    "average_cpc is required for AVERAGE_CPC search strategy"
+                )
+        elif self.search_strategy == SearchStrategyType.AVERAGE_CPA:
+            if self.average_cpa is None:
+                raise ValueError(
+                    "average_cpa is required for AVERAGE_CPA search strategy"
+                )
+            if self.goal_id is None:
+                raise ValueError(
+                    "goal_id is required for AVERAGE_CPA search strategy"
+                )
+        elif self.search_strategy == SearchStrategyType.PAY_FOR_CONVERSION:
+            if self.pay_for_conversion_cpa is None:
+                raise ValueError(
+                    "pay_for_conversion_cpa is required for PAY_FOR_CONVERSION search strategy"
+                )
+            if self.goal_id is None:
+                raise ValueError(
+                    "goal_id is required for PAY_FOR_CONVERSION search strategy"
+                )
+
+        if self.network_strategy == NetworkStrategyType.WB_MAXIMUM_CLICKS:
+            if self.weekly_spend_limit is None:
+                raise ValueError(
+                    "weekly_spend_limit is required for WB_MAXIMUM_CLICKS network strategy"
+                )
+        elif self.network_strategy == NetworkStrategyType.AVERAGE_CPC:
+            if self.network_average_cpc is None:
+                raise ValueError(
+                    "network_average_cpc is required for AVERAGE_CPC network strategy"
+                )
+
+        return self
 
 
 class GetAdGroupsInput(StrictModel):
@@ -250,6 +426,10 @@ class CreateTextAdInput(StrictModel):
         default=False,
         description="Whether this is a mobile ad",
     )
+    ad_image_hash: str | None = Field(
+        default=None,
+        description="Hash of an uploaded ad image to attach (from direct_upload_image)",
+    )
 
 
 class UpdateTextAdInput(StrictModel):
@@ -381,6 +561,72 @@ class ManageKeywordInput(StrictModel):
         min_length=1,
         max_length=10000,
         description="Keyword IDs to manage",
+    )
+
+
+# --- AdImage models ---
+
+
+class UploadImageInput(StrictModel):
+    """Input for uploading an ad image."""
+
+    image_data: str = Field(
+        ...,
+        min_length=1,
+        description="Base64-encoded image data (JPG, PNG, or GIF)",
+    )
+    name: str = Field(
+        ...,
+        min_length=1,
+        max_length=255,
+        description="Image name for reference",
+    )
+    image_type: AdImageType = Field(
+        default=AdImageType.REGULAR,
+        description=(
+            "Image type: REGULAR (1:1 to 3:4, 450-5000px), "
+            "WIDE (16:9, min 1080x607), "
+            "FIXED_IMAGE (exact sizes for banner ads)"
+        ),
+    )
+
+
+class GetImagesInput(StrictModel):
+    """Input for getting ad image metadata."""
+
+    ad_image_hashes: list[str] | None = Field(
+        default=None,
+        description="Filter by specific image hashes",
+    )
+    associated: AdImageAssociation | None = Field(
+        default=None,
+        description="Filter by association status: YES (linked to ads) or NO (not linked)",
+    )
+    limit: int = Field(
+        default=100,
+        ge=1,
+        le=10000,
+        description="Maximum number of images to return",
+    )
+    offset: int = Field(
+        default=0,
+        ge=0,
+        description="Offset for pagination",
+    )
+    response_format: ResponseFormat = Field(
+        default=ResponseFormat.MARKDOWN,
+        description="Output format: 'markdown' or 'json'",
+    )
+
+
+class DeleteImagesInput(StrictModel):
+    """Input for deleting ad images."""
+
+    ad_image_hashes: list[str] = Field(
+        ...,
+        min_length=1,
+        max_length=10000,
+        description="Image hashes to delete (images must not be attached to ads)",
     )
 
 

@@ -109,6 +109,8 @@ async def direct_create_text_ad(params: CreateTextAdInput) -> str:
 
         if params.title2:
             text_ad["Title2"] = params.title2
+        if params.ad_image_hash:
+            text_ad["AdImageHash"] = params.ad_image_hash
 
         ad = {"AdGroupId": params.adgroup_id, "TextAd": text_ad}
 

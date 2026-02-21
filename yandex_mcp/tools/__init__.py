@@ -7,6 +7,7 @@ from yandex_mcp.tools import (  # noqa: F401
     direct_adgroups,
     direct_ads,
     direct_campaigns,
+    direct_images,
     direct_keywords,
     direct_reports,
     metrika_counters,
