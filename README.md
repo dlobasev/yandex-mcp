@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![MCP](https://img.shields.io/badge/MCP-compatible-green.svg)](https://modelcontextprotocol.io/)
 
-MCP (Model Context Protocol) сервер для управления рекламными кампаниями в **Yandex Direct** и аналитикой в **Yandex Metrika** через Claude, Cursor и другие MCP-совместимые клиенты.
+MCP (Model Context Protocol) сервер для управления рекламными кампаниями в **Yandex Direct**, аналитикой в **Yandex Metrika** и исследованием ключевых слов через **Yandex Wordstat** — с помощью Claude, Cursor и других MCP-совместимых клиентов.
 
 > Управляй рекламой и аналитикой Яндекса голосом через AI
 
@@ -21,6 +21,12 @@ MCP (Model Context Protocol) сервер для управления рекла
 - **Счётчики**: получение списка, создание, удаление
 - **Цели**: получение, создание
 - **Отчёты**: статистика по метрикам с группировкой по времени
+
+### Yandex Wordstat API
+- **Популярные запросы**: поиск топ-запросов по фразе и ассоциации
+- **Динамика**: частота запроса по дням, неделям, месяцам
+- **Регионы**: распределение запросов по регионам с индексом аффинитивности
+- **Квоты**: информация о лимитах API
 
 ## Быстрый старт
 
@@ -44,6 +50,7 @@ pip install -e .
 1. Зарегистрируйте приложение на [OAuth Yandex](https://oauth.yandex.ru/)
 2. Добавьте права: `direct:api`, `metrika:read`, `metrika:write`
 3. Получите OAuth токен
+4. Для Wordstat API: отправьте заявку с ClientId в [поддержку Яндекс Директа](https://yandex.ru/support2/wordstat/en/content/api-wordstat)
 
 ### 3. Настройка Claude Code
 
@@ -68,6 +75,7 @@ pip install -e .
 > Покажи все мои кампании в Директе
 > Приостанови кампанию 12345
 > Какая статистика по сайту за неделю?
+> Покажи популярные запросы по фразе "купить айфон"
 ```
 
 ## Переменные окружения
@@ -79,6 +87,7 @@ YANDEX_TOKEN=your_oauth_token
 # Или раздельные токены
 YANDEX_DIRECT_TOKEN=your_direct_token
 YANDEX_METRIKA_TOKEN=your_metrika_token
+YANDEX_WORDSTAT_TOKEN=your_wordstat_token
 
 # Для агентских аккаунтов
 YANDEX_CLIENT_LOGIN=client_login
@@ -87,7 +96,7 @@ YANDEX_CLIENT_LOGIN=client_login
 YANDEX_USE_SANDBOX=true
 ```
 
-## Доступные инструменты (33 шт)
+## Доступные инструменты (37 шт)
 
 ### Yandex Direct
 
@@ -131,6 +140,16 @@ YANDEX_USE_SANDBOX=true
 | `metrika_get_report` | Получить отчёт |
 | `metrika_get_report_by_time` | Отчёт по времени |
 
+### Yandex Wordstat
+
+| Инструмент | Описание |
+|------------|----------|
+| `wordstat_top_requests` | Популярные запросы по фразе |
+| `wordstat_dynamics` | Динамика частоты запроса во времени |
+| `wordstat_regions` | Распределение запросов по регионам |
+| `wordstat_regions_tree` | Дерево регионов для фильтрации |
+| `wordstat_user_info` | Информация о квотах API |
+
 ## Примеры использования
 
 ### Управление кампаниями
@@ -154,6 +173,13 @@ YANDEX_USE_SANDBOX=true
 Покажи источники трафика для счётчика 12345
 ```
 
+### Исследование ключевых слов (Wordstat)
+```
+Покажи популярные запросы по фразе "купить ноутбук"
+Какая динамика запроса "iphone" за последний год по месяцам?
+В каких регионах чаще ищут "ремонт квартир"?
+```
+
 ### Создание объявлений
 ```
 Создай текстовое объявление в группе 456:
@@ -171,11 +197,7 @@ python -m yandex_mcp
 
 ### Проверка через MCP Inspector
 ```bash
-# Если установлен как пакет
 npx @modelcontextprotocol/inspector yandex-mcp
-
-# Или напрямую из папки проекта
-npx @modelcontextprotocol/inspector python yandex_mcp.py
 ```
 
 ### Cursor IDE
@@ -199,10 +221,25 @@ cd yandex-mcp
 pip install -e ".[dev]"
 
 # Запустить линтер
-ruff check .
+ruff check yandex_mcp/
 
 # Запустить тесты
 pytest
+```
+
+## Структура проекта
+
+```
+yandex_mcp/
+  __init__.py          # Entry point, экспорт mcp
+  server.py            # FastMCP instance
+  config.py            # Константы и URL
+  client.py            # API клиент (Direct, Metrika, Wordstat)
+  enums.py             # Перечисления
+  errors.py            # Обработка ошибок
+  formatters.py        # Форматирование в Markdown
+  models/              # Pydantic-модели ввода
+  tools/               # MCP-инструменты по сервисам
 ```
 
 ## Лицензия
@@ -213,6 +250,7 @@ MIT License - используйте свободно.
 
 - [Документация Yandex Direct API](https://yandex.ru/dev/direct/doc/dg/concepts/about.html)
 - [Документация Yandex Metrika API](https://yandex.ru/dev/metrika/doc/api2/concept/about.html)
+- [Документация Yandex Wordstat API](https://yandex.ru/support2/wordstat/en/content/api-wordstat)
 - [Model Context Protocol](https://modelcontextprotocol.io/)
 
 ---
