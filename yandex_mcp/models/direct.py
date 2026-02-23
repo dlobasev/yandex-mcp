@@ -494,6 +494,18 @@ class UpdateTextAdInput(StrictModel):
         default=None,
         description="New sitelink set ID to attach",
     )
+    ad_extension_ids: list[int] | None = Field(
+        default=None,
+        max_length=50,
+        description=(
+            "Callout extension IDs to SET on the ad (replaces all existing callouts). "
+            "Uses CalloutSetting with SET operation internally."
+        ),
+    )
+    ad_image_hash: str | None = Field(
+        default=None,
+        description="New image hash to attach (from direct_upload_image)",
+    )
     display_url_path: str | None = Field(
         default=None,
         max_length=20,

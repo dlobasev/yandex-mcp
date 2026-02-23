@@ -158,9 +158,12 @@ async def direct_create_text_ad(params: CreateTextAdInput) -> str:
 async def direct_update_ad(params: UpdateTextAdInput) -> str:
     """Update a text ad.
 
-    Allows updating ad title, text, and landing page URL.
+    Allows updating ad title, text, landing page URL, sitelinks, callouts, and image.
     Only specified fields will be updated.
     Note: Updated ad will need to be re-moderated.
+
+    Callout update uses CalloutSetting with SET operation internally —
+    the provided ad_extension_ids list replaces all existing callouts on the ad.
 
     Args:
         params: Ad ID and fields to update
@@ -181,6 +184,15 @@ async def direct_update_ad(params: UpdateTextAdInput) -> str:
             text_ad_update["Href"] = params.href
         if params.sitelink_set_id is not None:
             text_ad_update["SitelinkSetId"] = params.sitelink_set_id
+        if params.ad_extension_ids is not None:
+            text_ad_update["CalloutSetting"] = {
+                "AdExtensions": [
+                    {"AdExtensionId": ext_id, "Operation": "SET"}
+                    for ext_id in params.ad_extension_ids
+                ],
+            }
+        if params.ad_image_hash is not None:
+            text_ad_update["AdImageHash"] = params.ad_image_hash
         if params.display_url_path is not None:
             text_ad_update["DisplayUrlPath"] = params.display_url_path
 
