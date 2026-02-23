@@ -51,7 +51,7 @@ async def direct_get_statistics(params: DirectReportInput) -> str:
                 "DateTo": params.date_to,
             },
             "FieldNames": params.field_names,
-            "ReportName": f"Report_{params.date_from}_{params.date_to}",
+            "ReportName": f"Report_{params.report_type}_{params.date_from}_{params.date_to}_{hash(tuple(params.field_names))}",
             "ReportType": params.report_type,
             "DateRangeType": "CUSTOM_DATE",
             "Format": "TSV",
