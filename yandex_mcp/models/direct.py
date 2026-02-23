@@ -430,6 +430,20 @@ class CreateTextAdInput(StrictModel):
         default=None,
         description="Hash of an uploaded ad image to attach (from direct_upload_image)",
     )
+    sitelink_set_id: int | None = Field(
+        default=None,
+        description="Sitelink set ID to attach (from direct_create_sitelink_set)",
+    )
+    ad_extension_ids: list[int] | None = Field(
+        default=None,
+        max_length=50,
+        description="Callout extension IDs to attach (from direct_create_callouts, max 50)",
+    )
+    display_url_path: str | None = Field(
+        default=None,
+        max_length=20,
+        description="Display URL path shown in the ad (e.g., 'sale/phones', max 20 chars)",
+    )
 
 
 class UpdateTextAdInput(StrictModel):
@@ -457,6 +471,15 @@ class UpdateTextAdInput(StrictModel):
     href: str | None = Field(
         default=None,
         description="New landing page URL",
+    )
+    sitelink_set_id: int | None = Field(
+        default=None,
+        description="New sitelink set ID to attach",
+    )
+    display_url_path: str | None = Field(
+        default=None,
+        max_length=20,
+        description="New display URL path (max 20 chars)",
     )
 
 
@@ -627,6 +650,125 @@ class DeleteImagesInput(StrictModel):
         min_length=1,
         max_length=10000,
         description="Image hashes to delete (images must not be attached to ads)",
+    )
+
+
+# --- Sitelink models ---
+
+
+class SitelinkItem(StrictModel):
+    """Single sitelink within a set."""
+
+    title: str = Field(
+        ...,
+        min_length=1,
+        max_length=30,
+        description="Sitelink title (max 30 chars)",
+    )
+    href: str | None = Field(
+        default=None,
+        max_length=1024,
+        description="Sitelink URL (one of href or turbo_page_id required)",
+    )
+    turbo_page_id: int | None = Field(
+        default=None,
+        description="Turbo page ID (one of href or turbo_page_id required)",
+    )
+    description: str | None = Field(
+        default=None,
+        max_length=60,
+        description="Sitelink description for extended format (max 60 chars)",
+    )
+
+    @model_validator(mode="after")
+    def validate_href_or_turbo(self) -> "SitelinkItem":
+        if self.href is None and self.turbo_page_id is None:
+            raise ValueError("Either href or turbo_page_id must be provided")
+        return self
+
+
+class CreateSitelinkSetInput(StrictModel):
+    """Input for creating a sitelink set."""
+
+    sitelinks: list[SitelinkItem] = Field(
+        ...,
+        min_length=1,
+        max_length=8,
+        description="List of sitelinks (1-8 per set)",
+    )
+
+
+class GetSitelinkSetsInput(StrictModel):
+    """Input for getting sitelink sets."""
+
+    sitelink_set_ids: list[int] = Field(
+        ...,
+        min_length=1,
+        description="Sitelink set IDs to retrieve",
+    )
+    response_format: ResponseFormat = Field(
+        default=ResponseFormat.MARKDOWN,
+        description="Output format: 'markdown' or 'json'",
+    )
+
+
+class DeleteSitelinkSetsInput(StrictModel):
+    """Input for deleting sitelink sets."""
+
+    sitelink_set_ids: list[int] = Field(
+        ...,
+        min_length=1,
+        max_length=1000,
+        description="Sitelink set IDs to delete (must not be attached to ads)",
+    )
+
+
+# --- Callout (AdExtension) models ---
+
+
+class CreateCalloutsInput(StrictModel):
+    """Input for creating callout extensions."""
+
+    callout_texts: list[str] = Field(
+        ...,
+        min_length=1,
+        max_length=1000,
+        description="Callout texts to create (each max 25 chars)",
+    )
+
+
+class GetCalloutsInput(StrictModel):
+    """Input for getting callout extensions."""
+
+    callout_ids: list[int] | None = Field(
+        default=None,
+        description="Filter by specific callout IDs (omit to get all)",
+    )
+    limit: int = Field(
+        default=100,
+        ge=1,
+        le=10000,
+        description="Maximum number of callouts to return",
+    )
+    offset: int = Field(
+        default=0,
+        ge=0,
+        description="Offset for pagination",
+    )
+    response_format: ResponseFormat = Field(
+        default=ResponseFormat.MARKDOWN,
+        description="Output format: 'markdown' or 'json'",
+    )
+
+
+class DeleteCalloutsInput(StrictModel):
+    """Input for deleting callout extensions."""
+
+    callout_ids: list[int] = Field(
+        ...,
+        min_length=1,
+        max_length=10000,
+        description="Callout IDs to delete (must not be attached to ads)",
     )
 
 

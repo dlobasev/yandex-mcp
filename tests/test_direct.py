@@ -4,7 +4,8 @@ import json
 
 from tests.conftest import requires_direct
 
-from yandex_mcp.models.direct import GetCampaignsInput, GetImagesInput
+from yandex_mcp.models.direct import GetCalloutsInput, GetCampaignsInput, GetImagesInput
+from yandex_mcp.tools.direct_adextensions import direct_get_callouts
 from yandex_mcp.tools.direct_campaigns import direct_get_campaigns
 from yandex_mcp.tools.direct_images import direct_get_images
 
@@ -54,3 +55,25 @@ async def test_get_images_json():
     assert "images" in data
     assert "total" in data
     assert isinstance(data["images"], list)
+
+
+@requires_direct
+async def test_get_callouts_markdown():
+    """Get callouts returns valid markdown response."""
+    result = await direct_get_callouts(GetCalloutsInput(limit=5))
+    assert isinstance(result, str)
+    assert "Callout" in result or "No callouts found" in result
+    assert "API Error" not in result
+
+
+@requires_direct
+async def test_get_callouts_json():
+    """Get callouts returns valid JSON response."""
+    result = await direct_get_callouts(
+        GetCalloutsInput(limit=5, response_format="json")
+    )
+    assert isinstance(result, str)
+    assert "API Error" not in result
+    data = json.loads(result)
+    assert "callouts" in data
+    assert "total" in data

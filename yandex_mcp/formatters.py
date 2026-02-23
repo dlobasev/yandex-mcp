@@ -55,6 +55,13 @@ def format_ads_markdown(ads: list[dict[str, Any]]) -> str:
             lines.append(f"- **Title2**: {text_ad.get('Title2', 'N/A')}")
             lines.append(f"- **Text**: {text_ad.get('Text', 'N/A')}")
             lines.append(f"- **Href**: {text_ad.get('Href', 'N/A')}")
+            if text_ad.get("DisplayUrlPath"):
+                lines.append(f"- **Display URL Path**: {text_ad['DisplayUrlPath']}")
+            if text_ad.get("SitelinkSetId"):
+                lines.append(f"- **Sitelink Set ID**: {text_ad['SitelinkSetId']}")
+            if text_ad.get("AdExtensions"):
+                ext_ids = [str(e.get("AdExtensionId", "?")) for e in text_ad["AdExtensions"]]
+                lines.append(f"- **Callout IDs**: {', '.join(ext_ids)}")
 
         lines.append("")
 
@@ -99,6 +106,44 @@ def format_keywords_markdown(keywords: list[dict[str, Any]]) -> str:
             lines.append(f"- **Bid**: {bid / 1_000_000:.2f}")
 
         lines.append("")
+
+    return "\n".join(lines)
+
+
+def format_sitelink_sets_markdown(sets: list[dict[str, Any]]) -> str:
+    """Format sitelink sets as markdown."""
+    if not sets:
+        return "No sitelink sets found."
+
+    lines = ["# Sitelink Sets\n"]
+    for s in sets:
+        lines.append(f"## Set ID: {s.get('Id', 'N/A')}")
+        sitelinks = s.get("Sitelinks", [])
+        for i, sl in enumerate(sitelinks, 1):
+            lines.append(f"  {i}. **{sl.get('Title', 'N/A')}**")
+            if sl.get("Href"):
+                lines.append(f"     - URL: {sl['Href']}")
+            if sl.get("TurboPageId"):
+                lines.append(f"     - Turbo Page: {sl['TurboPageId']}")
+            if sl.get("Description"):
+                lines.append(f"     - Description: {sl['Description']}")
+        lines.append("")
+
+    return "\n".join(lines)
+
+
+def format_callouts_markdown(callouts: list[dict[str, Any]]) -> str:
+    """Format callout extensions as markdown."""
+    if not callouts:
+        return "No callouts found."
+
+    lines = ["# Callout Extensions\n"]
+    for ext in callouts:
+        callout = ext.get("Callout", {})
+        text = callout.get("CalloutText", "N/A")
+        lines.append(f"- **{text}** (ID: {ext.get('Id', 'N/A')})")
+        lines.append(f"  - Status: {ext.get('Status', 'N/A')}")
+        lines.append(f"  - Associated: {ext.get('Associated', 'N/A')}")
 
     return "\n".join(lines)
 

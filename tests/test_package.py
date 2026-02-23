@@ -9,8 +9,8 @@ def test_mcp_import():
     assert mcp.name == "yandex_mcp"
 
 
-def test_all_41_tools_registered():
-    """All 41 tools are registered with correct names."""
+def test_all_47_tools_registered():
+    """All 47 tools are registered with correct names."""
     from yandex_mcp import mcp
 
     tools = mcp._tool_manager._tools
@@ -44,6 +44,12 @@ def test_all_41_tools_registered():
         "direct_upload_image",
         "direct_get_images",
         "direct_delete_images",
+        "direct_create_sitelink_set",
+        "direct_get_sitelink_sets",
+        "direct_delete_sitelink_sets",
+        "direct_create_callouts",
+        "direct_get_callouts",
+        "direct_delete_callouts",
         "metrika_get_counters",
         "metrika_get_counter",
         "metrika_create_counter",
@@ -59,7 +65,7 @@ def test_all_41_tools_registered():
         "wordstat_user_info",
     ]
 
-    assert len(tools) == 41
+    assert len(tools) == 47
     for name in expected_tools:
         assert name in tools, f"Missing tool: {name}"
 
@@ -71,13 +77,15 @@ def test_tool_annotations():
     tools = mcp._tool_manager._tools
 
     destructive = ["direct_delete_campaigns", "direct_delete_ads", "direct_delete_keywords",
-                    "direct_delete_images", "metrika_delete_counter"]
+                    "direct_delete_images", "direct_delete_sitelink_sets",
+                    "direct_delete_callouts", "metrika_delete_counter"]
     for name in destructive:
         tool = tools[name]
         assert tool.annotations.destructiveHint is True, f"{name} should be destructive"
 
     readonly = ["direct_get_campaigns", "direct_get_ads", "direct_get_keywords",
                 "direct_get_adgroups", "direct_get_statistics", "direct_get_images",
+                "direct_get_sitelink_sets", "direct_get_callouts",
                 "metrika_get_counters", "metrika_get_counter",
                 "metrika_get_goals", "metrika_get_report", "metrika_get_report_by_time"]
     for name in readonly:

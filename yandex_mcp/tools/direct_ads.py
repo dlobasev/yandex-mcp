@@ -57,7 +57,10 @@ async def direct_get_ads(params: GetAdsInput) -> str:
                 "Id", "AdGroupId", "CampaignId", "Type", "State", "Status",
                 "StatusClarification",
             ],
-            "TextAdFieldNames": ["Title", "Title2", "Text", "Href", "Mobile", "DisplayDomain"],
+            "TextAdFieldNames": [
+                "Title", "Title2", "Text", "Href", "Mobile", "DisplayDomain",
+                "SitelinkSetId", "DisplayUrlPath", "AdExtensions",
+            ],
             "Page": {"Limit": params.limit, "Offset": params.offset},
         }
 
@@ -111,6 +114,12 @@ async def direct_create_text_ad(params: CreateTextAdInput) -> str:
             text_ad["Title2"] = params.title2
         if params.ad_image_hash:
             text_ad["AdImageHash"] = params.ad_image_hash
+        if params.sitelink_set_id is not None:
+            text_ad["SitelinkSetId"] = params.sitelink_set_id
+        if params.ad_extension_ids:
+            text_ad["AdExtensionIds"] = params.ad_extension_ids
+        if params.display_url_path is not None:
+            text_ad["DisplayUrlPath"] = params.display_url_path
 
         ad = {"AdGroupId": params.adgroup_id, "TextAd": text_ad}
 
@@ -170,6 +179,10 @@ async def direct_update_ad(params: UpdateTextAdInput) -> str:
             text_ad_update["Text"] = params.text
         if params.href is not None:
             text_ad_update["Href"] = params.href
+        if params.sitelink_set_id is not None:
+            text_ad_update["SitelinkSetId"] = params.sitelink_set_id
+        if params.display_url_path is not None:
+            text_ad_update["DisplayUrlPath"] = params.display_url_path
 
         if not text_ad_update:
             return "No fields specified for update."
