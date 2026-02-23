@@ -6,10 +6,12 @@ from yandex_mcp.client import api_client
 from yandex_mcp.enums import ResponseFormat
 from yandex_mcp.errors import handle_api_error
 from yandex_mcp.formatters import format_keywords_markdown
+from yandex_mcp.enums import AutotargetingCategory
 from yandex_mcp.models.direct import (
     AddKeywordsInput,
     GetKeywordsInput,
     ManageKeywordInput,
+    SetAutotargetingInput,
     SetKeywordBidsInput,
 )
 from yandex_mcp.server import mcp
@@ -164,6 +166,97 @@ async def direct_set_keyword_bids(params: SetKeywordBidsInput) -> str:
         ]
 
         return f"Successfully updated bids for {len(success)} keyword(s)."
+
+    except Exception as e:
+        return handle_api_error(e)
+
+
+@mcp.tool(
+    name="direct_set_autotargeting",
+    annotations={
+        "title": "Set Autotargeting Categories",
+        "readOnlyHint": False,
+        "destructiveHint": False,
+        "idempotentHint": True,
+        "openWorldHint": False,
+    },
+)
+async def direct_set_autotargeting(params: SetAutotargetingInput) -> str:
+    """Set autotargeting categories for an ad group.
+
+    Controls which query categories the autotargeting engine uses.
+    For unified campaigns (ЕПК), updates the ---autotargeting keyword via v501 API.
+
+    Categories:
+    - exact: target queries closely matching the ad (целевые)
+    - alternative: substitute product queries (альтернативные)
+    - competitor: competitor mention queries (конкурентные)
+    - broader: wider product interest queries (широкие)
+    - accessory: related product queries (сопутствующие)
+
+    Args:
+        params: Ad group ID and category toggles
+
+    Returns:
+        Updated autotargeting state
+    """
+    try:
+        # Find the ---autotargeting keyword for this ad group
+        get_result = await api_client.direct_request(
+            "keywords", "get",
+            {
+                "SelectionCriteria": {"AdGroupIds": [params.adgroup_id]},
+                "FieldNames": ["Id", "Keyword"],
+            },
+            use_v501=True,
+        )
+        keywords = get_result.get("result", {}).get("Keywords", [])
+        at_keyword = next(
+            (kw for kw in keywords if kw.get("Keyword") == "---autotargeting"),
+            None,
+        )
+
+        if not at_keyword:
+            return (
+                f"No autotargeting keyword found for ad group {params.adgroup_id}. "
+                "Autotargeting may not be enabled for this group."
+            )
+
+        category_map = {
+            AutotargetingCategory.EXACT: params.exact,
+            AutotargetingCategory.ALTERNATIVE: params.alternative,
+            AutotargetingCategory.COMPETITOR: params.competitor,
+            AutotargetingCategory.BROADER: params.broader,
+            AutotargetingCategory.ACCESSORY: params.accessory,
+        }
+
+        categories = [
+            {"Category": cat.value, "Value": "YES" if enabled else "NO"}
+            for cat, enabled in category_map.items()
+        ]
+
+        update_result = await api_client.direct_request(
+            "keywords", "update",
+            {"Keywords": [{"Id": at_keyword["Id"], "AutotargetingCategories": categories}]},
+            use_v501=True,
+        )
+        update_results = update_result.get("result", {}).get("UpdateResults", [])
+
+        errors: list[str] = []
+        for r in update_results:
+            if r.get("Errors"):
+                errors.extend([e.get("Message", "Unknown error") for e in r["Errors"]])
+
+        if errors:
+            return "Failed to update autotargeting:\n" + "\n".join(f"- {e}" for e in errors)
+
+        enabled = [cat.value for cat, on in category_map.items() if on]
+        disabled = [cat.value for cat, on in category_map.items() if not on]
+        return (
+            f"Autotargeting updated for ad group {params.adgroup_id}.\n"
+            f"Enabled: {', '.join(enabled) or 'none'}\n"
+            f"Disabled: {', '.join(disabled) or 'none'}"
+        )
 
     except Exception as e:
         return handle_api_error(e)

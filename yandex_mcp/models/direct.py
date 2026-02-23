@@ -1,7 +1,7 @@
 """Pydantic input models for Yandex Direct API tools."""
 
 
-from pydantic import Field, model_validator
+from pydantic import Field, field_validator, model_validator
 
 from yandex_mcp.enums import (
     AdImageAssociation,
@@ -100,6 +100,20 @@ class UpdateCampaignInput(StrictModel):
     negative_keywords: list[str] | None = Field(
         default=None,
         description="Campaign-level negative keywords",
+    )
+
+
+class CampaignGoalItem(StrictModel):
+    """A campaign goal with its conversion value."""
+
+    goal_id: int = Field(
+        ...,
+        description="Yandex Metrica goal ID",
+    )
+    value: float = Field(
+        ...,
+        gt=0,
+        description="Conversion value in currency units (will be converted to micros)",
     )
 
 
@@ -227,6 +241,10 @@ class CreateCampaignInput(StrictModel):
         default=None,
         max_length=25,
         description="List of IP addresses to block from seeing ads (max 25)",
+    )
+    goals: list[CampaignGoalItem] | None = Field(
+        default=None,
+        description="Campaign goals with conversion values (shown as 'Ключевые цели' in UI)",
     )
 
     @model_validator(mode="after")
@@ -587,6 +605,39 @@ class ManageKeywordInput(StrictModel):
     )
 
 
+class SetAutotargetingInput(StrictModel):
+    """Input for setting autotargeting categories on an ad group.
+
+    Controls which query categories the autotargeting engine targets.
+    All default to True (matching Yandex Direct defaults for new groups).
+    """
+
+    adgroup_id: int = Field(
+        ...,
+        description="Ad group ID to configure autotargeting for",
+    )
+    exact: bool = Field(
+        default=True,
+        description="Target exact (целевые) queries — closely matching the ad",
+    )
+    alternative: bool = Field(
+        default=True,
+        description="Target alternative (альтернативные) queries — substitute products",
+    )
+    competitor: bool = Field(
+        default=True,
+        description="Target competitor (конкурентные) queries — competitor mentions",
+    )
+    broader: bool = Field(
+        default=True,
+        description="Target broader (широкие) queries — wider product interest",
+    )
+    accessory: bool = Field(
+        default=True,
+        description="Target accessory (сопутствующие) queries — related products",
+    )
+
+
 # --- AdImage models ---
 
 
@@ -735,6 +786,16 @@ class CreateCalloutsInput(StrictModel):
         max_length=1000,
         description="Callout texts to create (each max 25 chars)",
     )
+
+    @field_validator("callout_texts")
+    @classmethod
+    def validate_callout_lengths(cls, texts: list[str]) -> list[str]:
+        for text in texts:
+            if len(text) > 25:
+                raise ValueError(
+                    f"Callout text exceeds 25 chars ({len(text)}): '{text}'"
+                )
+        return texts
 
 
 class GetCalloutsInput(StrictModel):

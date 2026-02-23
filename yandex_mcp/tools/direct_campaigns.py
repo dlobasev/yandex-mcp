@@ -190,6 +190,17 @@ async def direct_create_campaign(params: CreateCampaignInput) -> str:
         if params.counter_ids:
             unified_campaign["CounterIds"] = {"Items": params.counter_ids}
 
+        if params.goals:
+            unified_campaign["PriorityGoals"] = {
+                "Items": [
+                    {
+                        "GoalId": g.goal_id,
+                        "Value": int(g.value * MICROS_MULTIPLIER),
+                    }
+                    for g in params.goals
+                ],
+            }
+
         campaign: dict = {
             "Name": params.name,
             "StartDate": params.start_date,

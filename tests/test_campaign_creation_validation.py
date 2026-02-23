@@ -1,8 +1,13 @@
-"""Unit tests for CreateCampaignInput strategy validation."""
+"""Unit tests for model validation."""
 
 import pytest
 
-from yandex_mcp.models.direct import CreateCampaignInput
+from yandex_mcp.models.direct import (
+    CampaignGoalItem,
+    CreateCalloutsInput,
+    CreateCampaignInput,
+    SetAutotargetingInput,
+)
 
 
 def test_default_strategy_no_extra_params():
@@ -193,3 +198,69 @@ def test_invalid_date_format():
             name="Test",
             start_date="01-03-2026",
         )
+
+
+# --- Campaign goals ---
+
+
+def test_campaign_goals():
+    """Campaign goals are accepted with goal_id and value."""
+    inp = CreateCampaignInput(
+        name="Test",
+        start_date="2026-03-01",
+        goals=[
+            CampaignGoalItem(goal_id=123, value=300.0),
+            CampaignGoalItem(goal_id=456, value=1500.0),
+        ],
+    )
+    assert len(inp.goals) == 2
+    assert inp.goals[0].goal_id == 123
+    assert inp.goals[0].value == 300.0
+
+
+def test_campaign_goals_value_must_be_positive():
+    """Goal value must be > 0."""
+    with pytest.raises(ValueError):
+        CampaignGoalItem(goal_id=123, value=0)
+
+
+# --- Autotargeting ---
+
+
+def test_autotargeting_defaults_all_true():
+    """All autotargeting categories default to True."""
+    inp = SetAutotargetingInput(adgroup_id=123)
+    assert inp.exact is True
+    assert inp.alternative is True
+    assert inp.competitor is True
+    assert inp.broader is True
+    assert inp.accessory is True
+
+
+def test_autotargeting_custom_values():
+    """Custom autotargeting category values are accepted."""
+    inp = SetAutotargetingInput(
+        adgroup_id=123,
+        exact=True,
+        alternative=False,
+        competitor=False,
+        broader=False,
+        accessory=False,
+    )
+    assert inp.exact is True
+    assert inp.alternative is False
+
+
+# --- Callout validation ---
+
+
+def test_callout_text_too_long():
+    """Callout text exceeding 25 chars is rejected."""
+    with pytest.raises(ValueError, match="exceeds 25 chars"):
+        CreateCalloutsInput(callout_texts=["This text is way too long for a callout"])
+
+
+def test_callout_text_valid():
+    """Callout texts within 25 chars are accepted."""
+    inp = CreateCalloutsInput(callout_texts=["Short text", "Also fine"])
+    assert len(inp.callout_texts) == 2

@@ -104,6 +104,16 @@ class AdImageAssociation(str, Enum):
     NO = "NO"
 
 
+class AutotargetingCategory(str, Enum):
+    """Autotargeting category for ad groups in unified campaigns (ЕПК)."""
+
+    EXACT = "EXACT"
+    ALTERNATIVE = "ALTERNATIVE"
+    COMPETITOR = "COMPETITOR"
+    BROADER = "BROADER"
+    ACCESSORY = "ACCESSORY"
+
+
 class MetrikaGroupType(str, Enum):
     """Time grouping for Metrika reports."""
 
