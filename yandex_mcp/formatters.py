@@ -294,8 +294,8 @@ def format_wordstat_top_requests_markdown(data: dict[str, Any] | list[dict[str, 
     if isinstance(data, list):
         parts = []
         for item in data:
-            if "error" in item:
-                parts.append(f"**Error for phrase**: {item.get('error')}")
+            if item.get("error"):
+                parts.append(f"**Error for phrase**: {item['error']}")
             else:
                 parts.append(_format_single_top_requests(item))
         return "\n\n---\n\n".join(parts)
