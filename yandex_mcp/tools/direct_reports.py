@@ -1,5 +1,6 @@
 """Yandex Direct statistics report tool."""
 
+import asyncio
 import json
 
 from yandex_mcp.client import api_client
@@ -68,47 +69,54 @@ async def direct_get_statistics(params: DirectReportInput) -> str:
                 }
             ]
 
-        response = await api_client.direct_report_request(report_def)
+        max_attempts = 10
+        for attempt in range(max_attempts):
+            response = await api_client.direct_report_request(report_def)
 
-        if response.status_code == 200:
-            lines = response.text.strip().split("\n")
-            if len(lines) < 2:
-                return "No data found for the specified period."
+            if response.status_code == 200:
+                break
 
-            header = lines[0].split("\t")
-            data_rows = [line.split("\t") for line in lines[1:] if line.strip()]
+            if response.status_code in (201, 202):
+                wait = int(response.headers.get("retryIn", 5))
+                if attempt < max_attempts - 1:
+                    await asyncio.sleep(wait)
+                    continue
+                return "Report is still being generated after multiple retries. Please try again later."
 
-            if params.response_format == ResponseFormat.JSON:
-                result = [dict(zip(header, row, strict=False)) for row in data_rows]
-                return json.dumps(
-                    {"data": result, "total": len(result)},
-                    indent=2,
-                    ensure_ascii=False,
-                )
-
-            md_lines = ["# Direct Statistics Report\n"]
-            md_lines.append(f"**Period**: {params.date_from} — {params.date_to}")
-            md_lines.append(f"**Report type**: {params.report_type}\n")
-
-            md_lines.append("| " + " | ".join(header) + " |")
-            md_lines.append("| " + " | ".join(["---"] * len(header)) + " |")
-
-            for row in data_rows[:DIRECT_REPORT_MAX_ROWS]:
-                md_lines.append("| " + " | ".join(row) + " |")
-
-            if len(data_rows) > DIRECT_REPORT_MAX_ROWS:
-                md_lines.append(
-                    f"\n*...and {len(data_rows) - DIRECT_REPORT_MAX_ROWS} more rows*"
-                )
-
-            return "\n".join(md_lines)
-
-        elif response.status_code in (201, 202):
-            return "Report is being generated. Please try again in a few seconds."
-
-        else:
             response.raise_for_status()
             return "Unexpected response from Reports API."
+
+        lines = response.text.strip().split("\n")
+        if len(lines) < 2:
+            return "No data found for the specified period."
+
+        header = lines[0].split("\t")
+        data_rows = [line.split("\t") for line in lines[1:] if line.strip()]
+
+        if params.response_format == ResponseFormat.JSON:
+            result = [dict(zip(header, row, strict=False)) for row in data_rows]
+            return json.dumps(
+                {"data": result, "total": len(result)},
+                indent=2,
+                ensure_ascii=False,
+            )
+
+        md_lines = ["# Direct Statistics Report\n"]
+        md_lines.append(f"**Period**: {params.date_from} — {params.date_to}")
+        md_lines.append(f"**Report type**: {params.report_type}\n")
+
+        md_lines.append("| " + " | ".join(header) + " |")
+        md_lines.append("| " + " | ".join(["---"] * len(header)) + " |")
+
+        for row in data_rows[:DIRECT_REPORT_MAX_ROWS]:
+            md_lines.append("| " + " | ".join(row) + " |")
+
+        if len(data_rows) > DIRECT_REPORT_MAX_ROWS:
+            md_lines.append(
+                f"\n*...and {len(data_rows) - DIRECT_REPORT_MAX_ROWS} more rows*"
+            )
+
+        return "\n".join(md_lines)
 
     except Exception as e:
         return handle_api_error(e)
